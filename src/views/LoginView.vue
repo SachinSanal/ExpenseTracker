@@ -1,8 +1,11 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import AppBrand from '@/components/AppBrand.vue'
+
+const route = useRoute()
+const passwordResetOk = computed(() => route.query.reset === 'ok')
 
 const email = ref('')
 const password = ref('')
@@ -34,6 +37,15 @@ async function handleSubmit() {
     <div class="auth-card">
       <AppBrand tagline="Sign in to continue" />
       <h1>Log in</h1>
+      <p
+        v-if="passwordResetOk"
+        class="success-banner"
+        role="status"
+        aria-live="polite"
+      >
+        <strong>Password updated successfully.</strong>
+        Sign in below with your new password.
+      </p>
       <form @submit.prevent="handleSubmit">
         <div class="field">
           <label for="login-email">Email</label>
@@ -55,6 +67,9 @@ async function handleSubmit() {
             required
           />
         </div>
+        <p class="forgot-line">
+          <router-link :to="{ name: 'forgot-password' }">Forgot password?</router-link>
+        </p>
         <p v-if="error" class="error">{{ error }}</p>
         <button type="submit" class="btn" :disabled="loading || submitting">
           {{ submitting ? 'Signing in…' : 'Log in' }}
@@ -107,6 +122,31 @@ async function handleSubmit() {
   background: rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
 }
+.success-banner {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.85rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(74, 222, 128, 0.14);
+  border-radius: 8px;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  text-align: left;
+}
+.success-banner strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #4ade80;
+  font-size: 0.95rem;
+}
+.forgot-line {
+  margin: -0.25rem 0 0.75rem;
+  font-size: 0.875rem;
+  text-align: right;
+}
+.forgot-line a {
+  color: #a5b4fc;
+}
 .error {
   color: #f87171;
   font-size: 0.9rem;
@@ -124,5 +164,15 @@ async function handleSubmit() {
 .link-line {
   margin-top: 1.5rem;
   font-size: 0.95rem;
+}
+@media (prefers-color-scheme: light) {
+  .success-banner {
+    color: #14532d;
+    background: rgba(22, 163, 74, 0.1);
+    border-color: rgba(22, 163, 74, 0.35);
+  }
+  .success-banner strong {
+    color: #15803d;
+  }
 }
 </style>

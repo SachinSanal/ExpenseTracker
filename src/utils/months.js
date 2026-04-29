@@ -72,6 +72,15 @@ export function isExpenseInMonth(dateValue, yearMonth) {
   return d >= start && d <= end
 }
 
+/** @param {string|number} year — e.g. 2026 or "2026" */
+export function isExpenseInYear(dateValue, year) {
+  const y = typeof year === 'number' ? year : Number(year)
+  if (!Number.isFinite(y)) return false
+  const d = parseExpenseDate(dateValue)
+  if (!d) return false
+  return d.getFullYear() === y
+}
+
 export function labelForMonthKey(monthKey, options) {
   const opt = options.find((o) => o.value === monthKey)
   return opt?.label ?? monthKey

@@ -1,40 +1,29 @@
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { messageForAuthError } from '@/utils/authErrors'
 import AppBrand from '@/components/AppBrand.vue'
 
 const email = ref('')
-const password = ref('')
-const confirmPassword = ref('')
 const error = ref('')
 const success = ref('')
 const submitting = ref(false)
-const { signUp, loading } = useAuth()
-const router = useRouter()
+const { resetPasswordForEmail, loading } = useAuth()
 
 async function handleSubmit() {
   error.value = ''
   success.value = ''
-  if (!email.value || !password.value) {
-    error.value = 'Please enter email and password.'
-    return
-  }
-  if (password.value !== confirmPassword.value) {
-    error.value = 'Passwords do not match.'
-    return
-  }
-  if (password.value.length < 6) {
-    error.value = 'Password must be at least 6 characters.'
+  if (!email.value.trim()) {
+    error.value = 'Please enter your email address.'
     return
   }
   submitting.value = true
   try {
-    await signUp(email.value, password.value)
-    success.value = 'Account created. Check your email to confirm your account, then log in.'
+    await resetPasswordForEmail(email.value)
+    success.value =
+      'If an account exists for that address, we sent a reset link. Check your inbox and spam folder.'
   } catch (e) {
-    error.value = messageForAuthError(e, 'Sign up failed. Please try again.')
+    error.value = messageForAuthError(e, 'Could not send reset email. Please try again.')
   } finally {
     submitting.value = false
   }
@@ -44,47 +33,30 @@ async function handleSubmit() {
 <template>
   <div class="auth-page">
     <div class="auth-card">
-      <AppBrand tagline="Create an account to get started" />
-      <h1>Sign up</h1>
+      <AppBrand tagline="Reset your password" />
+      <h1>Forgot password</h1>
+      <p class="lead">
+        Enter the email you use to sign in. We will send you a link to choose a new password.
+      </p>
       <form @submit.prevent="handleSubmit">
         <div class="field">
-          <label for="signup-email">Email</label>
+          <label for="forgot-email">Email</label>
           <input
-            id="signup-email"
+            id="forgot-email"
             v-model="email"
             type="email"
             autocomplete="email"
             required
           />
         </div>
-        <div class="field">
-          <label for="signup-password">Password</label>
-          <input
-            id="signup-password"
-            v-model="password"
-            type="password"
-            autocomplete="new-password"
-            required
-          />
-        </div>
-        <div class="field">
-          <label for="signup-confirm">Confirm password</label>
-          <input
-            id="signup-confirm"
-            v-model="confirmPassword"
-            type="password"
-            autocomplete="new-password"
-            required
-          />
-        </div>
         <p v-if="error" class="error">{{ error }}</p>
         <p v-if="success" class="success">{{ success }}</p>
         <button type="submit" class="btn" :disabled="loading || submitting">
-          {{ submitting ? 'Creating account…' : 'Sign up' }}
+          {{ submitting ? 'Sending…' : 'Send reset link' }}
         </button>
       </form>
       <p class="link-line">
-        Already have an account? <router-link to="/login">Log in</router-link>
+        <router-link to="/login">Back to log in</router-link>
       </p>
     </div>
   </div>
@@ -100,7 +72,7 @@ async function handleSubmit() {
 }
 .auth-card {
   width: 100%;
-  max-width: 360px;
+  max-width: 400px;
   padding: 2rem;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -108,9 +80,16 @@ async function handleSubmit() {
 }
 .auth-card h1 {
   margin-top: 0;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
   font-size: 1.5rem;
   line-height: 1.2;
+}
+.lead {
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  opacity: 0.85;
+  text-align: left;
+  line-height: 1.45;
 }
 .field {
   margin-bottom: 1rem;
@@ -152,5 +131,15 @@ async function handleSubmit() {
 .link-line {
   margin-top: 1.5rem;
   font-size: 0.95rem;
+}
+@media (prefers-color-scheme: light) {
+  .auth-card {
+    border-color: rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.9);
+  }
+  .field input {
+    border-color: rgba(0, 0, 0, 0.2);
+    background: #fff;
+  }
 }
 </style>

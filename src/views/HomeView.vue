@@ -506,7 +506,7 @@ async function handleAddExpense() {
 
         <div v-if="!listLoading && expenses.length" class="list-total" role="status">
           <div class="list-total-copy">
-            <span class="list-total-eyebrow">Total shown</span>
+            <span class="list-total-eyebrow">Total</span>
             <span class="list-total-desc">{{ listTotalDescription }}</span>
           </div>
           <strong class="list-total-value">{{ formatAmount(listPeriodTotal) }}</strong>

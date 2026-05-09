@@ -1,0 +1,86 @@
+.bottom-nav {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: min(640px, 100vw);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem calc(0.55rem + env(safe-area-inset-bottom, 0px));
+  border-radius: 14px 14px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 15, 32, 0.96);
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.35);
+  z-index: 20;
+  box-sizing: border-box;
+}
+.bottom-nav-btn {
+  margin: 0;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.78rem;
+  line-height: 1.2;
+  font-weight: 600;
+  padding: 0.52rem 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 0;
+  white-space: nowrap;
+}
+.bottom-nav-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.bottom-nav-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.bottom-nav-btn span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bottom-nav-btn.active {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.92) 0%, rgba(79, 70, 229, 0.92) 100%);
+  border-color: rgba(129, 140, 248, 0.98);
+  color: #fff;
+}
+@media (max-width: 480px) {
+  .bottom-nav {
+    gap: 0.35rem;
+    padding: 0.45rem 0.5rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
+  }
+  .bottom-nav-btn {
+    border-radius: 8px;
+    padding: 0.45rem 0.25rem;
+    font-size: 0.72rem;
+    gap: 0.25rem;
+  }
+  .bottom-nav-icon {
+    width: 0.82rem;
+    height: 0.82rem;
+  }
+}
+@media (prefers-color-scheme: light) {
+  .bottom-nav {
+    border-top-color: rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 -8px 22px rgba(15, 23, 42, 0.12);
+  }
+  .bottom-nav-btn {
+    border-color: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.03);
+    color: rgba(15, 23, 42, 0.8);
+  }
+  .bottom-nav-btn.active {
+    color: #fff;
+    background: #6366f1;
+    border-color: #6366f1;
+  }
+}

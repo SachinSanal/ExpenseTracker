@@ -3,6 +3,8 @@ import { computed, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import AppBrand from '@/components/AppBrand.vue'
 import ExpenseAnalytics from '@/components/ExpenseAnalytics.vue'
+import AddExpenseSection from '@/components/home/AddExpenseSection.vue'
+import BottomTabNav from '@/components/home/BottomTabNav.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useExpenses } from '@/composables/useExpenses'
 import {
@@ -31,6 +33,7 @@ const category = ref('')
 const amount = ref('')
 const formError = ref('')
 const submitting = ref(false)
+const activeTab = ref('add')
 
 const editingId = ref(null)
 const editTitle = ref('')
@@ -59,6 +62,16 @@ const listMonthKey = ref(getCurrentMonthKey())
 const listMonthLabel = computed(() =>
   labelForMonthKey(listMonthKey.value, listMonthOptions.value),
 )
+const currentMonthKey = computed(() => getCurrentMonthKey())
+const currentMonthLabel = computed(() =>
+  labelForMonthKey(currentMonthKey.value, listMonthOptions.value),
+)
+const currentMonthTotal = computed(() =>
+  expenses.value
+    .filter((e) => isExpenseInMonth(expenseOccurredOn(e), currentMonthKey.value))
+    .reduce((sum, e) => sum + Number(e.amount ?? 0), 0),
+)
+const currentMonthTotalDescription = computed(() => `Spend in ${currentMonthLabel.value}`)
 
 const listPeriodMode = ref('month')
 const listYearKey = ref(String(new Date().getFullYear()))
@@ -171,6 +184,7 @@ function todayIsoDate() {
 }
 
 const spentOn = ref(todayIsoDate())
+const maxExpenseDate = computed(() => todayIsoDate())
 
 async function handleLogout() {
   await signOut()
@@ -371,72 +385,32 @@ async function handleAddExpense() {
     </header>
 
     <main class="main">
-      <datalist id="category-suggestions">
-        <option v-for="cat in categoryOptions" :key="cat" :value="cat" />
-      </datalist>
-      <section class="card form-section">
-        <h2 class="section-title">Add expense</h2>
-        <form class="form" @submit.prevent="handleAddExpense">
-          <div class="field">
-            <label for="exp-title">Title</label>
-            <input
-              id="exp-title"
-              v-model="title"
-              type="text"
-              autocomplete="off"
-              placeholder="e.g. ABC Supermarket"
-              required
-            />
+      <section v-show="activeTab === 'add'" class="add-month-summary">
+        <div class="list-total" role="status">
+          <div class="list-total-copy">
+            <span class="list-total-eyebrow">This month</span>
+            <span class="list-total-desc">{{ currentMonthTotalDescription }}</span>
           </div>
-          <div class="field">
-            <label for="exp-category">Category</label>
-            <input
-              id="exp-category"
-              v-model="category"
-              type="text"
-              list="category-suggestions"
-              autocomplete="off"
-              placeholder="Pick or type a category"
-              required
-            />
-            <p v-if="categoryOptions.length" class="field-hint">
-              Suggestions from your expenses — you can still type a new category.
-            </p>
-          </div>
-          <div class="field">
-            <label for="exp-amount">Amount</label>
-            <input
-              id="exp-amount"
-              v-model="amount"
-              type="number"
-              min="0"
-              step="0.01"
-              inputmode="decimal"
-              placeholder="0.00"
-              required
-            />
-          </div>
-          <div class="field">
-            <label for="exp-spent-on">Expense date</label>
-            <input
-              id="exp-spent-on"
-              v-model="spentOn"
-              type="date"
-              :max="todayIsoDate()"
-              required
-            />
-            <p class="field-hint">When you spent — can be today or an earlier day.</p>
-          </div>
-          <p v-if="formError" class="error">{{ formError }}</p>
-          <button type="submit" class="btn-primary" :disabled="submitting">
-            {{ submitting ? 'Saving…' : 'Add expense' }}
-          </button>
-        </form>
+          <strong class="list-total-value">{{ formatAmount(currentMonthTotal) }}</strong>
+        </div>
       </section>
 
-      <ExpenseAnalytics :expenses="expenses" />
+      <AddExpenseSection
+        v-show="activeTab === 'add'"
+        v-model:title="title"
+        v-model:category="category"
+        v-model:amount="amount"
+        v-model:spent-on="spentOn"
+        :category-options="categoryOptions"
+        :max-date="maxExpenseDate"
+        :form-error="formError"
+        :submitting="submitting"
+        @submit="handleAddExpense"
+      />
 
-      <section class="card list-section">
+      <ExpenseAnalytics v-show="activeTab === 'insights'" :expenses="expenses" />
+
+      <section v-show="activeTab === 'expenses'" class="card list-section">
         <div class="list-section-head">
           <h2 class="section-title list-section-title">Your expenses</h2>
           <p class="list-section-sub">Narrow by time, category, or amount order.</p>
@@ -617,460 +591,9 @@ async function handleAddExpense() {
     </main>
 
     <p class="signed-in">Signed in as {{ user?.email }}</p>
+
+    <BottomTabNav v-model="activeTab" />
   </div>
 </template>
 
-<style scoped>
-.page {
-  min-height: 100vh;
-  padding: 1.25rem;
-  max-width: 640px;
-  margin: 0 auto;
-}
-.top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-.top :deep(.brand) {
-  text-align: left;
-  margin-bottom: 0;
-}
-.btn-ghost {
-  flex-shrink: 0;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.875rem;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-.main {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-.card {
-  padding: 1.25rem 1.5rem;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
-  text-align: left;
-}
-.section-title {
-  margin: 0 0 1rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-}
-.card.list-section {
-  background: linear-gradient(
-    160deg,
-    rgba(255, 255, 255, 0.055) 0%,
-    rgba(255, 255, 255, 0.02) 48%,
-    rgba(99, 102, 241, 0.04) 100%
-  );
-  border-color: rgba(255, 255, 255, 0.11);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
-}
-.list-section-head {
-  margin-bottom: 1rem;
-}
-.list-section-title {
-  margin: 0 0 0.25rem;
-  letter-spacing: -0.02em;
-}
-.list-section-sub {
-  margin: 0;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  opacity: 0.62;
-  font-weight: 400;
-}
-.list-filters-surface {
-  padding: 0.95rem 1rem 1rem;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-  margin-bottom: 1rem;
-}
-.list-view-switch {
-  display: flex;
-  width: 100%;
-  max-width: 16rem;
-  border-radius: 9px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.35);
-}
-.list-view-switch-btn {
-  flex: 1;
-  margin: 0;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  font-family: inherit;
-  letter-spacing: 0.02em;
-  border: none;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.55);
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-}
-.list-view-switch-btn + .list-view-switch-btn {
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-}
-.list-view-switch-btn:hover {
-  color: rgba(255, 255, 255, 0.88);
-  background: rgba(255, 255, 255, 0.04);
-}
-.list-view-switch-btn.active {
-  color: #fff;
-  background: linear-gradient(180deg, rgba(99, 102, 241, 0.55) 0%, rgba(79, 70, 229, 0.45) 100%);
-}
-.list-filters-grid {
-  display: grid;
-  gap: 0.85rem 1rem;
-  margin-top: 0.95rem;
-  grid-template-columns: 1fr;
-}
-@media (min-width: 520px) {
-  .list-filters-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .filter-field-span {
-    grid-column: 1 / -1;
-  }
-}
-.filter-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  min-width: 0;
-}
-.list-filter-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.45);
-}
-.list-filter-select {
-  width: 100%;
-  padding: 0.55rem 2rem 0.55rem 0.75rem;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  line-height: 1.35;
-  border-radius: 8px;
-  /* Dark control + dark popup hint — matches the panel; option colors help Chrome/Edge. */
-  color-scheme: dark;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background-color: rgba(255, 255, 255, 0.06);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.65rem center;
-  background-size: 1rem;
-  color: rgba(248, 250, 252, 0.95);
-  cursor: pointer;
-  appearance: none;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease;
-}
-.list-filter-select option {
-  color: #f1f5f9;
-  background-color: #1e293b;
-}
-.list-filter-select:hover {
-  border-color: rgba(129, 140, 248, 0.45);
-  background-color: rgba(255, 255, 255, 0.1);
-}
-.list-filter-select:focus {
-  outline: none;
-  border-color: rgba(129, 140, 248, 0.65);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-}
-.list-total {
-  margin: 0 0 1rem;
-  padding: 0.85rem 1rem;
-  border-radius: 10px;
-  border: 1px solid rgba(99, 102, 241, 0.28);
-  background: linear-gradient(
-    125deg,
-    rgba(99, 102, 241, 0.14) 0%,
-    rgba(99, 102, 241, 0.06) 55%,
-    rgba(0, 0, 0, 0.12) 100%
-  );
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem 1rem;
-  border-left: 4px solid rgba(129, 140, 248, 0.85);
-}
-.list-total-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  min-width: 0;
-}
-.list-total-eyebrow {
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(165, 180, 252, 0.95);
-}
-.list-total-desc {
-  font-size: 0.8125rem;
-  line-height: 1.35;
-  opacity: 0.82;
-}
-.list-total-value {
-  font-variant-numeric: tabular-nums;
-  font-size: 1.2rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #e0e7ff;
-}
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.field label {
-  display: block;
-  margin-bottom: 0.35rem;
-  font-size: 0.875rem;
-}
-.field-hint {
-  margin: 0.35rem 0 0;
-  font-size: 0.75rem;
-  opacity: 0.65;
-  line-height: 1.35;
-}
-.field input {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  font-size: 1rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.2);
-  box-sizing: border-box;
-}
-.error {
-  color: #f87171;
-  font-size: 0.875rem;
-  margin: 0;
-}
-.btn-primary {
-  margin-top: 0.25rem;
-  width: 100%;
-  padding: 0.65rem;
-  font-weight: 600;
-}
-.btn-primary:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-.muted {
-  margin: 0;
-  font-size: 0.9rem;
-  opacity: 0.65;
-}
-.list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-.row:last-child {
-  border-bottom: none;
-}
-.row-body {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-  width: 100%;
-}
-.row-main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  min-width: 0;
-}
-.row-title {
-  font-weight: 500;
-}
-.row-meta {
-  font-size: 0.8rem;
-  opacity: 0.7;
-}
-.row-right {
-  text-align: right;
-  flex-shrink: 0;
-}
-.row-amount {
-  display: block;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.row-date {
-  display: block;
-  font-size: 0.75rem;
-  opacity: 0.6;
-  margin-top: 0.2rem;
-}
-.list-error {
-  margin-bottom: 0.75rem;
-}
-.row-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-}
-.row-actions-end {
-  align-self: flex-end;
-}
-.btn-small {
-  padding: 0.35rem 0.65rem;
-  font-size: 0.8rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.15);
-  cursor: pointer;
-}
-.btn-small:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.btn-edit:hover:not(:disabled) {
-  border-color: #646cff;
-}
-.btn-delete {
-  color: #f87171;
-  border-color: rgba(248, 113, 113, 0.35);
-}
-.btn-delete:hover:not(:disabled) {
-  border-color: #f87171;
-}
-.btn-save {
-  font-weight: 600;
-}
-.btn-cancel {
-  background: transparent;
-}
-.row-edit {
-  width: 100%;
-}
-.edit-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-.edit-input {
-  width: 100%;
-  padding: 0.45rem 0.65rem;
-  font-size: 0.95rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.2);
-  box-sizing: border-box;
-}
-.edit-amount {
-  max-width: 10rem;
-}
-.signed-in {
-  margin: 1.5rem 0 0;
-  font-size: 0.8rem;
-  opacity: 0.55;
-  text-align: center;
-}
-@media (prefers-color-scheme: light) {
-  .btn-ghost {
-    border-color: rgba(0, 0, 0, 0.15);
-  }
-  .card.list-section {
-    background: linear-gradient(
-      160deg,
-      rgba(255, 255, 255, 0.95) 0%,
-      rgba(248, 250, 252, 0.98) 100%
-    );
-    border-color: rgba(0, 0, 0, 0.08);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset;
-  }
-  .list-section-sub {
-    color: rgba(15, 23, 42, 0.55);
-  }
-  .list-filters-surface {
-    background: rgba(15, 23, 42, 0.04);
-    border-color: rgba(0, 0, 0, 0.08);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  }
-  .list-view-switch {
-    border-color: rgba(0, 0, 0, 0.1);
-    background: rgba(255, 255, 255, 0.85);
-  }
-  .list-view-switch-btn {
-    color: rgba(15, 23, 42, 0.55);
-  }
-  .list-view-switch-btn + .list-view-switch-btn {
-    border-left-color: rgba(0, 0, 0, 0.08);
-  }
-  .list-view-switch-btn:hover {
-    color: #0f172a;
-    background: rgba(0, 0, 0, 0.03);
-  }
-  .list-view-switch-btn.active {
-    color: #fff;
-    background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%);
-  }
-  .list-filter-label {
-    color: rgba(15, 23, 42, 0.45);
-  }
-  .list-filter-select {
-    color-scheme: light;
-    border-color: rgba(0, 0, 0, 0.12);
-    background-color: #fff;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    color: #0f172a;
-  }
-  .list-filter-select option {
-    color: #0f172a;
-    background-color: #fff;
-  }
-  .list-filter-select:hover {
-    border-color: rgba(99, 102, 241, 0.35);
-    background-color: #fff;
-  }
-  .list-total {
-    border-color: rgba(99, 102, 241, 0.25);
-    border-left-color: #6366f1;
-    background: linear-gradient(
-      125deg,
-      rgba(99, 102, 241, 0.1) 0%,
-      rgba(255, 255, 255, 0.9) 70%
-    );
-  }
-  .list-total-eyebrow {
-    color: #4338ca;
-  }
-  .list-total-desc {
-    color: rgba(15, 23, 42, 0.65);
-  }
-  .list-total-value {
-    color: #312e81;
-  }
-}
-</style>
+<style scoped src="../styles/home/home-view.css"></style>

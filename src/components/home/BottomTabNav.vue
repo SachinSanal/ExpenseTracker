@@ -76,6 +76,23 @@ function setTab(tab) {
       </span>
       <span>Your expenses</span>
     </button>
+    <button
+      type="button"
+      class="bottom-nav-btn"
+      :class="{ active: modelValue === 'ai' }"
+      :aria-pressed="modelValue === 'ai'"
+      @click="setTab('ai')"
+    >
+      <span class="bottom-nav-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path
+            d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3zM5 17l.9 2.7L8.6 21l-2.7.9L5 24.6l-.9-2.7L1.4 21l2.7-.9L5 17zM19 14l.7 2.1L21.8 17l-2.1.7L19 20l-.7-2.3L16.2 17l2.1-.7L19 14z"
+            fill="currentColor"
+          />
+        </svg>
+      </span>
+      <span>AI</span>
+    </button>
   </nav>
 </template>
 

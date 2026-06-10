@@ -3,6 +3,7 @@ import { computed, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import AppBrand from '@/components/AppBrand.vue'
 import ExpenseAnalytics from '@/components/ExpenseAnalytics.vue'
+import ExpenseAiAssistant from '@/components/ExpenseAiAssistant.vue'
 import AddExpenseSection from '@/components/home/AddExpenseSection.vue'
 import BottomTabNav from '@/components/home/BottomTabNav.vue'
 import { useAuth } from '@/composables/useAuth'
@@ -410,6 +411,12 @@ async function handleAddExpense() {
 
       <ExpenseAnalytics v-show="activeTab === 'insights'" :expenses="expenses" />
 
+      <ExpenseAiAssistant
+        v-show="activeTab === 'ai'"
+        :expenses="expenses"
+        :loading="listLoading"
+      />
+
       <section v-show="activeTab === 'expenses'" class="card list-section">
         <div class="list-section-head">
           <h2 class="section-title list-section-title">Your expenses</h2>
@@ -486,7 +493,7 @@ async function handleAddExpense() {
           <strong class="list-total-value">{{ formatAmount(listPeriodTotal) }}</strong>
         </div>
         <p v-if="listLoading" class="muted">Loading…</p>
-        <p v-else-if="!expenses.length" class="muted">No expenses yet. Add one above.</p>
+        <p v-else-if="!expenses.length" class="muted">No expenses yet.</p>
         <p v-else-if="!expensesInListPeriod.length" class="muted">
           No expenses in
           {{ listPeriodMode === 'year' ? listYearKey : listMonthLabel }}. Try another period or add one
